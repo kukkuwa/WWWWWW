@@ -523,7 +523,7 @@ const App = () => {
 
 export default App;
 
---------me tika dala wen bn laraveel eka hiriyata kragnn bha kiwa bn palweni eka ubala arn giypu code ekma tiyenwa -----
+--------me tika dala weren bn laraveel eka hiriyata kragnn bha kiwa bn palweni eka ubala arn giypu code ekma tiyenwa -----
 
 
 
