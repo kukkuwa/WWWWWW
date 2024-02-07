@@ -1,0 +1,437 @@
+
+
+npx create-react-app ss
+==customerRegister.blade.php==
+resource-view
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=
+    , initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+     
+<h1>User Register</h1>
+
+<div>
+   <form action="{{route('insertuser')}}"method="post">
+    @csrf
+     <label>Name</label>
+     <input type="text" name="name" id="name" placeholder="Enter your Name">
+     @error('name')
+     <span style="color:red">{{$message}}</span>
+     @enderror
+     <br><br>
+     
+
+     <label>Email</label>
+     <input type="email" name="email" id="Email" placeholder="Enter your Email">
+     @error('name')
+     <span style="color:red">{{$message}}</span>
+     @enderror
+     <br><br>
+
+
+     <label>Address</label>
+     <input type="address" name="address" id="Address" placeholder="Enter your Address">
+     @error('address')
+     <span style="color:red">{{$message}}</span>
+     @enderror
+     <br><br>
+
+     <label>Phone</label>
+     <input type="text" name="phone" id="Phone" placeholder="Enter your Phone">
+     @error('phone')
+     <span style="color:red">{{$message}}</span>
+     @enderror
+     <br><br>
+
+     <label>Password</label>
+     <input type="text" name="password" id="Password" placeholder="Enter your Password">
+     @error('password')
+     <span style="color:red">{{$message}}</span>
+     @enderror
+     <br><br>
+
+     <label>Confirm Password</label>
+     <input type="password" name="password_confirmation" id="Password" placeholder="Confirm Password">
+     @error('password')
+     <span style="color:red">{{$message}}</span>
+     @enderror
+     <br><br>
+
+     <button type="submit">Register</button>
+     <button type="reset">Reset</button>
+
+     @if(session('status'))
+    <span style="color:red">{{ session('status') }}</span>
+     @endif
+
+
+   </form>
+
+
+
+</div>
+
+</body>
+</html>
+
+==web.php==
+route-web
+php artisan make:controller userController
+
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\userController;
+
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+Route::get('/register',[userController::class,'viewregister'])->name('viewregister');
+
+Route::post('/register',[userController::class,'insertuser'])->name('insertuser');
+
+Route::get('login',[userController::class,'viewlogin'])->name('login');
+Route::post('login',[userController::class,'authlogin'])->name('userlogin');
+
+
+==userController.php==
+app-http-controllers
+
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+
+class userController extends Controller
+{
+    public function viewregister()
+    {
+        return view('customerRegister');
+    }
+
+    public function insertuser(Request $req)
+
+    {
+
+      $req->validate([
+           'name'=>'required|string|max:100',
+           'email'=>'required|email|unique:users',
+           'phone'=>'required|max:12',
+           'address'=>'required|string|max:100',
+           'password'=>'required|confirmed|max:30',  ]);
+ 
+           $data['name']=$req->name;
+           $data['email']=$req->email;
+           $data['phone']=$req->phone;
+           $data['address']=$req->address;
+           $data['password']=($req->password);
+
+
+           $newuser=User::create($data);
+
+           if($newuser)
+           {
+            return redirect('register')->with('status',"User Registered Successfuly");
+           }else
+           {
+            return redirect('register')->with('status',"Registration Error");
+           } 
+        }
+
+public function viewlogin()
+{
+    return view('login');
+}
+public function authlogin(Request $req)
+{
+    $req->validate([
+        'email'=>'required|email|unique:users',
+        'password'=>'required|max:30'
+
+    ]);
+$credential=$req->only('email','password');
+
+if(Auth::attempt($credentials))
+{
+    return redirect('login')->with('status',"Successfuly loging");    
+}else
+{
+ return redirect('login')->with('status',"Login failed");
+}
+
+
+
+}
+
+
+}
+
+==migrate==
+database-migration
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('address');
+            $table->string('phone');
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('users');
+    }
+};
+
+
+==User.php(MODEL:user)==
+
+<?php
+
+namespace App\Models;
+
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+
+class User extends Authenticatable
+{
+    use HasApiTokens, HasFactory, Notifiable;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    
+     protected $fillable=['name','email','address','phone','password'];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
+}
+
+
+==login.blade.php==
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div>
+      <form action="{{route('userlogin')}}" method="post">
+        @csrf
+        <label>Email</label>
+        <input type="email" name="email" id="email" placeholder="Enter your email">
+        @error('password')
+     <span style="color:red">{{$message}}</span>
+     @enderror
+     <br><br>
+
+        <label>Password</label>
+        <input type="password" name="password" id="password" placeholder="Enter your password">
+        @error('password')
+     <span style="color:red">{{$message}}</span>
+     @enderror
+     <br><br>
+        <button type="submit">Login</button>
+
+        @if(session('status'))
+    <span style="color:red">{{ session('status') }}</span>
+     @endif
+
+      </form>
+
+
+    </div>
+</body>
+</html>
+
+
+------------------ PHP ----------------------------------
+
+==form.php==
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Validation</title>
+
+    <!-- program path ---------------->
+<script>
+    function validateform(){
+        var name = document.forms["myform"]["firstname"].value;
+        var email = document.forms["myform"]["email"].value;
+        var nic = document.forms["myform"]["nic"].value;
+        var tel = document.forms["myform"]["tel"].value;
+        var pass = document.forms["myform"]["pass"].value;
+        var repass = document.forms["myform"]["repass"].value;
+       document.getElementById("error").style.color = "red";
+
+        if(name == "" | email == "" | nic =="" | tel == "" | pass == "" | repass == ""){
+            document.getElementById('error').innerHTML = "required fields are must be fielled out";
+            return false;
+        } 
+        else if(name.length > 20){
+            document.getElementById('errname').innerHTML = "name must be no more than 20 Letters";
+            return false;
+
+        }
+        else if(pass.length >= 8){
+            document.getElementById('errpass').innerHTML = "Password must contain min 8 chars cant enter more than 8";
+            return false;
+
+        }
+       else if(pass != repass){
+            document.getElementById('errrepass').innerHTML = "password is not same plese check the password again";
+            return false;
+        }
+        }
+            function passmatch(){
+                var pass = document.forms["myform"]["pass"].value;
+                var repass = document.forms["myform"]["repass"].value;
+                if(pass == repass){
+                    
+                    document.getElementById("errrepass").innerHTML = "password is matching!";
+					document.getElementById("errrepass").style.color="green";
+                }else{
+                    
+                    document.getElementById("errrepass").innerHTML = "password is not matching!";
+					document.getElementById("errrepass").style.color="red";
+            }
+         
+
+     }
+
+</script>
+
+</head>
+<body>
+
+<!-- design----------------------------->
+
+    <div style="width: 500px; height:auto; padding:30px; background:#10101010; margin: 30px auto;">
+    <div id="error"></div>
+
+    <form action="connect.php" method="POST" name="myform" onsubmit="return validateform()" >
+    
+        <p>Name     : <input type = "text" id="firstname" name="firstname" title="Only string and spaces and no more 20 charcters allowed"  ><span id="errname"></span></p>
+        <p>Email    : <input type = "email" id="email" name="email" ><span id="errrepassmail"></span></p>
+        <p>NIC No   : <input type = "text" id="nic" name="nic" pattern="[a-zA-Z0-9]{10,12}" title="only numbers and string allowed"></p>
+        <p>Telephone No: <input type = "text" id="tel" name="tel" pattern="[0-9]{10}" title="numbers are allowed" ></p>
+        <p>password: <input type = "password" id="pass" name="pass"  ><span id="errpass"></span></p>
+        <p>Re Enter Password: <input type = "password" id="repass" name="repass" onkeyup="passmatch()"><span id="errrepass"></span></p>
+        <p><input type="submit" name="submit" id="submit"></p>
+
+    </form>
+    </div>
+</body>
+</html>
+
+
+
+
+==connect.php==
+
+<?php 
+        $servername = "localhost";
+        $username = "root";
+        $password = "";
+        $dbname = "formexplain";
+
+    
+        $firstname = $_POST['firstname'];
+        $email = $_POST['email'];
+        $nic = $_POST['nic'];
+        $tel = $_POST['tel'];
+        $pass = $_POST['pass'];
+
+
+    //database connect
+
+    $conn = new mysqli('localhost','root','','formexplain');
+    if($conn->connect_error){
+    //if error
+        die('connection failed : '.$conn->connection_error);
+
+    }else{
+        $stmt = $conn->prepare("insert into registration(firstname, email, nic, tel, pass) values(?,?,?,?,?)");
+
+        $stmt->bind_param("sssis",$firstname, $email, $nic, $tel, $pass);
+        $stmt->execute(); 
+        echo "Registeration Sucessfully...";
+        $stmt->close();
+        $conn->close();
+
+    }
+
+
+
+?>
